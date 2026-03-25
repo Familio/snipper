@@ -1,40 +1,42 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 from PIL import Image
+import os
 
-# 1. Setup API (Put your key in Streamlit Secrets or enter it here)
-st.set_page_config(page_title="AI Chart Scalper", layout="wide")
-st.title("🤖 AI-Powered Silver & Oil Analyzer")
+st.set_page_config(page_title="AI Silver/Oil Scalper", layout="wide")
+st.title("🤖 AI Commodity Chart Analyzer")
 
-api_key = st.sidebar.text_input("Enter Google API Key", type="password")
+# Use a sidebar for the API key for security
+api_key = st.sidebar.text_input("Enter Gemini API Key", type="password")
 
 if api_key:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-
-    # 2. Upload Section
-    uploaded_file = st.file_uploader("Upload Silver or Oil Chart", type=["png", "jpg", "jpeg"])
+    # New 2026 SDK Client initialization
+    client = genai.Client(api_key=api_key)
+    
+    uploaded_file = st.file_uploader("Upload Silver (SI) or Oil (CL) Chart", type=["png", "jpg", "jpeg"])
 
     if uploaded_file:
         img = Image.open(uploaded_file)
-        st.image(img, caption="Uploaded Chart", use_container_width=True)
+        st.image(img, caption="Target Chart", use_container_width=True)
         
-        if st.button("Analyze for Entry/Exit"):
-            with st.spinner("AI is reading the chart..."):
-                # 3. The Prompt that defines the logic
+        if st.button("Generate Buy/Sell Signal"):
+            with st.spinner("Analyzing market structure..."):
                 prompt = """
-                You are a professional commodities day trader. Analyze this chart image for Silver (SI) or Oil (CL).
-                1. Identify the current Trend.
-                2. Identify major Support and Resistance levels.
-                3. Based on price action, give a clear BUY, SELL, or WAIT signal.
-                4. Provide a specific Entry Price, Take Profit (TP), and Stop Loss (SL).
-                Format the output clearly with bold headers.
+                Identify if this is Silver or Oil. 
+                1. Determine the current Trend (Bullish/Bearish).
+                2. Give a clear 'BUY' or 'SELL' or 'WAIT' signal.
+                3. Provide exact levels for: ENTRY, TAKE PROFIT, and STOP LOSS.
+                Use bold formatting for the signal.
                 """
                 
-                response = model.generate_content([prompt, img])
+                # Using the latest 2026 model 'gemini-3-flash'
+                response = client.models.generate_content(
+                    model='gemini-3-flash',
+                    contents=[img, prompt]
+                )
                 
                 st.markdown("---")
-                st.subheader("📊 Trade Plan")
+                st.subheader("🎯 Trade Execution Plan")
                 st.write(response.text)
 else:
-    st.warning("Please enter your Google API Key in the sidebar to start.")
+    st.info("Please enter your API Key in the sidebar to activate the AI.")
